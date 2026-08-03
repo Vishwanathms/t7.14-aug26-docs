@@ -1,73 +1,143 @@
-Since this is the **first Docker lab** in your DevOps/DevSecOps training, the objective should be to help students understand the complete Docker image build lifecycle rather than just executing commands.
+That is even closer to what most software companies use. I would actually **avoid PowerShell** and conduct the entire lab using **VS Code + Git Bash + Docker Desktop**.
+
+This setup mirrors a typical developer workstation:
+
+* **VS Code** → Code editor
+* **Git Bash** → Terminal
+* **Docker Desktop** → Container runtime
+* **Browser** → Application testing
+
+This is the workflow used by many development teams.
 
 ---
 
-# Lab Manual – Building a Docker Image for a Python Flask Application
+# Lab 1 – Containerizing a Python Flask Application using Docker Desktop
 
 ## Lab Objective
 
-By the end of this lab, students will be able to:
+By the end of this lab, you will be able to:
 
-* Understand the application structure
-* Understand the purpose of `requirements.txt`
-* Understand the purpose of a `Dockerfile`
+* Open an existing Python project in VS Code
+* Understand the project structure
 * Build a Docker image
-* Verify the image
-* Run the container
-* Access the application
-* Stop and remove the container
+* Run a Docker container
+* Verify the application
+* View logs
+* Access the running container
+* Stop and remove containers
+* Remove Docker images
 
 ---
 
 # Lab Environment
 
-Ubuntu 24.04
+| Software       | Version       |
+| -------------- | ------------- |
+| Windows 10/11  | Latest        |
+| VS Code        | Installed     |
+| Git Bash       | Installed     |
+| Docker Desktop | Running       |
+| Web Browser    | Chrome / Edge |
 
-Verify Docker installation.
+---
 
-```bash
-docker --version
+# Project Structure
+
+Open the project folder.
+
 ```
-
-Expected Output
-
-```
-Docker version xx.xx.x
-```
-
-Check Docker service.
-
-```bash
-sudo systemctl status docker
-```
-
-If Docker is not running
-
-```bash
-sudo systemctl start docker
+python-app/
+│
+├── app.py
+├── requirements.txt
+└── Dockerfile
 ```
 
 ---
 
-# Step 1 – Create a Working Directory
+# Step 1 – Start Docker Desktop
 
-Create a project directory.
+Launch **Docker Desktop**.
 
-```bash
-mkdir python-app
+Verify the status is:
+
+```
+Engine Running
 ```
 
-Move into the directory.
+Wait until Docker finishes initializing before continuing.
 
-```bash
-cd python-app
+---
+
+# Step 2 – Open the Project in VS Code
+
+Open **VS Code**.
+
+Select
+
+```
+File
+
+↓
+
+Open Folder
+
+↓
+
+python-app
+```
+
+Verify the Explorer shows:
+
+```
+app.py
+requirements.txt
+Dockerfile
 ```
 
 ---
 
-# Step 2 – Verify the Project Files
+# Step 3 – Open the Integrated Git Bash Terminal
 
-The project already contains three files.
+Inside VS Code:
+
+```
+Terminal
+
+↓
+
+New Terminal
+```
+
+If the default terminal is not Git Bash:
+
+```
+▼
+
+↓
+
+Select Default Profile
+
+↓
+
+Git Bash
+```
+
+Verify the current directory.
+
+```bash
+pwd
+```
+
+Example Output
+
+```bash
+/c/DockerLab/python-app
+```
+
+---
+
+# Step 4 – Verify Project Files
 
 ```bash
 ls
@@ -83,9 +153,9 @@ Dockerfile
 
 ---
 
-# Step 3 – Understand the Files
+# Step 5 – Review the Application Files
 
-Display the application.
+## View app.py
 
 ```bash
 cat app.py
@@ -94,16 +164,18 @@ cat app.py
 Observe:
 
 * Flask application
-* HTTP server
+* Web server initialization
 * Listening port
 
 ---
 
-View Python dependencies.
+## View requirements.txt
 
 ```bash
 cat requirements.txt
 ```
+
+Observe the Python dependencies required by the application.
 
 Example
 
@@ -111,11 +183,9 @@ Example
 Flask==3.0.0
 ```
 
-This file tells pip which packages to install.
-
 ---
 
-View the Dockerfile.
+## View Dockerfile
 
 ```bash
 cat Dockerfile
@@ -123,18 +193,18 @@ cat Dockerfile
 
 Students should identify:
 
-* Base Image
-* Working Directory
-* Copy files
-* Install dependencies
-* Expose port
-* Start application
+* Base image
+* Working directory
+* Copy instruction
+* Dependency installation
+* Port exposure
+* Startup command
 
 ---
 
-# Step 4 – Build the Docker Image
+# Step 6 – Build the Docker Image
 
-Run the build command.
+Execute:
 
 ```bash
 docker build -t python-flask-app:v1 .
@@ -142,38 +212,21 @@ docker build -t python-flask-app:v1 .
 
 Explanation
 
-```
-docker build      → Build image
--t                → Tag image
-python-flask-app  → Image name
-v1                → Version
-.                 → Current directory
-```
+| Command          | Description            |
+| ---------------- | ---------------------- |
+| docker build     | Builds a Docker image  |
+| -t               | Assigns a name and tag |
+| python-flask-app | Image name             |
+| v1               | Image version          |
+| .                | Current directory      |
+
+Wait for the build to complete successfully.
 
 ---
 
-# Step 5 – Observe the Build Process
+# Step 7 – Verify the Image
 
-Students should observe each build step.
-
-Typical output
-
-```
-FROM python:3.12
-WORKDIR /app
-COPY .
-RUN pip install
-EXPOSE 5000
-CMD
-```
-
-Each Dockerfile instruction creates a new image layer.
-
----
-
-# Step 6 – Verify Image Creation
-
-List images.
+Using the CLI:
 
 ```bash
 docker images
@@ -183,134 +236,170 @@ Expected Output
 
 ```
 REPOSITORY          TAG
+
 python-flask-app    v1
 ```
 
 ---
 
-# Step 7 – Inspect the Image
+# Step 8 – Verify the Image in Docker Desktop
 
-Display image details.
+Open Docker Desktop.
 
-```bash
-docker image inspect python-flask-app:v1
+Navigate to:
+
+```
+Images
 ```
 
-Observe
+Confirm that the image **python-flask-app:v1** is listed.
 
+Observe:
+
+* Repository name
+* Tag
+* Image size
 * Image ID
-* Size
-* Layers
-* Creation Time
-* Entrypoint
 
 ---
 
-# Step 8 – Run the Container
-
-Start the container.
+# Step 9 – Run the Container
 
 ```bash
-docker run -d --name flask-app -p 5000:5000 python-flask-app:v1
+docker run -d \
+--name flask-app \
+-p 5000:5000 \
+python-flask-app:v1
 ```
 
-Explanation
-
-```
--d          Detached mode
---name      Container name
--p          Host:Container port
-```
+Verify the container starts successfully.
 
 ---
 
-# Step 9 – Verify Running Containers
+# Step 10 – Verify Running Containers
 
 ```bash
 docker ps
 ```
 
-Expected
+Expected Output
 
 ```
 CONTAINER ID
+
 IMAGE
+
 STATUS
+
 PORTS
+
 NAMES
 ```
 
 ---
 
-# Step 10 – Access the Application
+# Step 11 – Verify in Docker Desktop
 
-Using the terminal.
-
-```bash
-curl http://localhost:5000
-```
-
-Or
-
-Open a browser.
+Open:
 
 ```
-http://<VM-IP>:5000
+Containers
 ```
 
-Expected output
+Locate:
+
+```
+flask-app
+```
+
+Observe:
+
+* Container status
+* Port mapping
+* Container ID
+* Runtime duration
+
+---
+
+# Step 12 – Access the Application
+
+Open a web browser.
+
+```
+http://localhost:5000
+```
+
+Expected Output
 
 ```
 Hello World
 ```
 
-(or whatever your Flask application returns)
+(or the response defined in your `app.py`)
 
 ---
 
-# Step 11 – View Container Logs
+# Step 13 – View Application Logs
 
-Display application logs.
+Using the CLI:
 
 ```bash
 docker logs flask-app
 ```
 
-Students should observe:
+Observe:
 
-* Flask startup
+* Flask server startup
 * Listening port
-* HTTP requests
+* Incoming requests
 
 ---
 
-# Step 12 – Enter the Running Container
+# Step 14 – View Logs in Docker Desktop
 
-Open an interactive shell.
+Navigate to:
+
+```
+Containers
+
+↓
+
+flask-app
+
+↓
+
+Logs
+```
+
+Observe the same output through the graphical interface.
+
+---
+
+# Step 15 – Access the Running Container
 
 ```bash
 docker exec -it flask-app bash
 ```
 
-If bash is unavailable
+If Bash is unavailable:
 
 ```bash
 docker exec -it flask-app sh
 ```
 
-Verify current directory.
+Verify the working directory.
 
 ```bash
 pwd
 ```
 
-List files.
+List the application files.
 
 ```bash
 ls
 ```
 
-Exit
+Exit the container.
 
 ```bash
 exit
@@ -318,29 +407,36 @@ exit
 
 ---
 
-# Step 13 – Monitor Resource Usage
-
-View CPU and Memory usage.
+# Step 16 – Monitor Container Resource Usage
 
 ```bash
 docker stats
 ```
 
-Stop monitoring
+Observe:
+
+* CPU usage
+* Memory usage
+* Network I/O
+* Block I/O
+
+Press:
 
 ```
-CTRL+C
+Ctrl + C
 ```
+
+to stop monitoring.
 
 ---
 
-# Step 14 – Stop the Container
+# Step 17 – Stop the Container
 
 ```bash
 docker stop flask-app
 ```
 
-Verify.
+Verify:
 
 ```bash
 docker ps
@@ -350,23 +446,13 @@ The container should no longer appear in the running container list.
 
 ---
 
-# Step 15 – View All Containers
-
-```bash
-docker ps -a
-```
-
-Notice the container status is now **Exited**.
-
----
-
-# Step 16 – Start the Container Again
+# Step 18 – Restart the Container
 
 ```bash
 docker start flask-app
 ```
 
-Verify.
+Verify:
 
 ```bash
 docker ps
@@ -374,15 +460,15 @@ docker ps
 
 ---
 
-# Step 17 – Remove the Container
+# Step 19 – Remove the Container
 
-Stop if running.
+Stop the container if it is running.
 
 ```bash
 docker stop flask-app
 ```
 
-Delete it.
+Remove the container.
 
 ```bash
 docker rm flask-app
@@ -394,11 +480,11 @@ Verify.
 docker ps -a
 ```
 
+The container should no longer be listed.
+
 ---
 
-# Step 18 – Remove the Image
-
-Delete the Docker image.
+# Step 20 – Remove the Docker Image
 
 ```bash
 docker rmi python-flask-app:v1
@@ -414,18 +500,60 @@ The image should no longer be listed.
 
 ---
 
-# Lab Verification Checklist
+# Challenge Exercise (Optional)
 
-Students should be able to demonstrate:
+Modify the response in `app.py` from:
 
-* ✅ Docker daemon is running
-* ✅ Project files are present
-* ✅ Docker image built successfully
-* ✅ Docker image listed
-* ✅ Container started
-* ✅ Application accessible on port 5000
-* ✅ Logs viewed
-* ✅ Interactive shell accessed
-* ✅ Container stopped and restarted
-* ✅ Container removed
-* ✅ Image removed
+```python
+Hello World
+```
+
+to:
+
+```python
+Hello Docker Students!
+```
+
+Then:
+
+1. Save the file.
+2. Rebuild the image with a new tag:
+
+```bash
+docker build -t python-flask-app:v2 .
+```
+
+3. Remove the old container:
+
+```bash
+docker rm -f flask-app
+```
+
+4. Run the new version:
+
+```bash
+docker run -d --name flask-app -p 5000:5000 python-flask-app:v2
+```
+
+5. Refresh `http://localhost:5000` and verify the updated response.
+
+---
+
+## Lab Completion Checklist
+
+Students should successfully demonstrate:
+
+* ✅ Docker Desktop Engine is running
+* ✅ Open the project in VS Code
+* ✅ Use the integrated Git Bash terminal
+* ✅ Build a Docker image
+* ✅ Verify the image using both CLI and Docker Desktop
+* ✅ Run a container
+* ✅ Access the application in a browser
+* ✅ View logs using CLI and Docker Desktop
+* ✅ Access the container shell
+* ✅ Monitor container resources
+* ✅ Stop, restart, and remove the container
+* ✅ Remove the Docker image
+* ✅ Rebuild the application after making a code change (challenge exercise)
+
