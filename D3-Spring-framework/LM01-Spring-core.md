@@ -225,6 +225,30 @@ COPY . .
 CMD ["mvn","compile"]
 ```
 
+or 
+* If there is issues with the docker build , showing up some kind of SSL issues.
+* use the below DOckerfile
+
+```bash
+FROM maven:3.9-eclipse-temurin-21
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \ 
+    ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+ENV MAVEN_OPTS="-Dmaven.resolver.transport=wagon -Dmaven.wagon.http.ssl.insecure=true -Dmaven.wagon.http.ssl.allowall=true -Dmaven.wagon.http.ssl.ignore.validity.dates=true"
+
+COPY . .
+
+CMD ["mvn", "-Dmaven.resolver.transport=wagon", "-Dmaven.wagon.http.ssl.insecure=true", "-Dmaven.wagon.http.ssl.allowall=true", "-Dmaven.wagon.http.ssl.ignore.validity.dates=true", 
+"compile"]
+
+CMD ["mvn", "compile"] 
+```
+
 ---
 
 ## Build Docker Image
