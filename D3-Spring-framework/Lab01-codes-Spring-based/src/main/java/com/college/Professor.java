@@ -17,7 +17,6 @@ public class Professor {
     public void displayProfessor() {
 
         System.out.println("Professor : " + professorName);
-
         course.displayCourse();
     }
 }
