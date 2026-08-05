@@ -191,6 +191,15 @@ Run
 mvn compile
 ```
 
+* If there is SSL issue, then use the below mvn command
+
+```bash
+mvn clean compile \
+-Dmaven.wagon.http.ssl.insecure=true \
+-Dmaven.wagon.http.ssl.allowall=true \
+-Dmaven.wagon.http.ssl.ignore.validity.dates=true
+```
+
 Expected
 
 ```
