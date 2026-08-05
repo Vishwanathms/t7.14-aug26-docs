@@ -25,3 +25,41 @@ docker build -t student-management:sf-db .
 
 docker run -it --name student-app --network student-network student-management:sf-db
 ```
+
+* Make sure the DB is running with contianer name mysql-db and on port 3306
+if not run the below command 
+
+```bash
+
+docker run -d --name mysql-db --network student-network -e MYSQL_ROOT_PASSWORD=root123 -e MYSQL_DATABASE=studentdb -p 4306:3306 mysql:8.4
+```
+
+
+StudentManagementSpring
+│
+├── pom.xml
+│
+└── src
+    └── main
+        ├── java
+        │
+        │   └── com
+        │       └── college
+        │
+        │           ├── config
+        │           │      AppConfig.java
+        │           │
+        │           ├── dao
+        │           │      StudentDAO.java
+        │           │      StudentDAOImpl.java
+        │           │
+        │           ├── model
+        │           │      Student.java
+        │           │
+        │           ├── service
+        │           │      StudentService.java
+        │           │      StudentServiceImpl.java
+        │           │
+        │           └── Main.java
+        │
+        └── resources
