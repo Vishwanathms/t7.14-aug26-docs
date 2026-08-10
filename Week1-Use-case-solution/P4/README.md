@@ -31,12 +31,14 @@ Routes:
 - `GET /students/stats` - topper + class average
 
 
+student-mgmt:sf-db-mvc
+
 # Execution
 
 ```bash
 docker build -t student-management:mvc .
 
-docker run -it --name student-app -p 8080:8080 --network student-network student-management:mvc
+docker run -it --name student-app-p4 -p 9081:8080 --network student-network student-mgmt:sf-db-mvc
 ```
 
 Then open http://localhost:8080/students in a browser.
