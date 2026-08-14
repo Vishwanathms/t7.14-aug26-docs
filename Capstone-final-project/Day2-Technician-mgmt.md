@@ -49,3 +49,69 @@ End-of-day application
 Technician Dashboard
         +
 Technician CRUD
+
+
+Features students should develop
+
+Technician list, 
+Add Technician, 
+View Technician details, 
+Edit Technician, 
+Deactivate Technician, 
+Search Technician, 
+active/inactive indicator
+
+==========================================
+This page should introduce CRUD.
+
+The source specifically requires Create, View, View All, Update, Deactivate and Search functionality.
+
+Features:
+
+Technician List
+Display all technicians
+Search by name
+Filter active/inactive
+View details
+Edit
+Deactivate
+Add Technician
+
+Fields:
+
+Display Name
+Service Areas
+Skills
+Working Hours
+Active
+Edit Technician
+
+Allow modification of:
+
+Name
+Service areas
+Skills
+Working hours
+Active status
+Technician Details
+Technician ID
+Name
+Service Areas
+Skills
+Working Hours
+Status
+
+Suggested screen flow:
+
+Technician Management
+
+
+[ Search Technician ] [ + Add Technician ]
+
+
+--------------------------------------------------
+Name       Area        Skills       Status   Action
+--------------------------------------------------
+Ravi       Bangalore   Repair       Active   View Edit
+Suresh     Mysore      Installation Active   View Edit
+--------------------------------------------------

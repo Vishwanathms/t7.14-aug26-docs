@@ -56,4 +56,54 @@ Technician Status API
        ↓
 In-memory Technician data
 
+=======================================
 Day 1 deliverable: Working Technician Status Dashboard/API.
+
+
+
+Features students should develop
+Display all technicians, technician name, area, current status, summary cards for Total / Available / Busy / Offline, refresh status, consume REST API
+
+The first page should be simple and focus on consuming the backend API.
+
+UI components:
+
+Dashboard header
+Technician status table
+Status badges:
+AVAILABLE
+BUSY
+OFFLINE
+Summary cards:
+Total Technicians
+Available
+Busy
+Offline
+Refresh button
+Loading indicator
+Error message when API is unavailable
+
+The backend provides the status summary through GET /api/technicians/status.
+
+Expected screen:
+
+--------------------------------------------------
+        Technician Status Dashboard
+--------------------------------------------------
+
+
+ Total       Available       Busy       Offline
+   4             2             1           1
+
+
+--------------------------------------------------
+ Technician     Area          Status
+--------------------------------------------------
+ Ravi           Bangalore     AVAILABLE
+ Suresh         Mysore        BUSY
+ Arun           Bangalore     OFFLINE
+ Kiran          Tumkur        AVAILABLE
+--------------------------------------------------
+
+
+              [ Refresh Status ]
