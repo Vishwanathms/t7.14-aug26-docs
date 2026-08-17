@@ -13,7 +13,7 @@ run-nginx:
     DOCKER_TLS_CERTDIR: ""
   script:
     - docker pull nginx:latest
-    - docker run -d --name nginx-demo -p 8080:80 nginx:latest
+    - docker run -d --name nginx-demo -p 9085:80 nginx:latest
     - sleep 5
     - docker ps
-    - curl -s http://localhost:8080 | head -20
+    - curl -s http://localhost:9085 | head -20
