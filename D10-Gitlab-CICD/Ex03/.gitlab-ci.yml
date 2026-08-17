@@ -1,0 +1,41 @@
+stages:
+  - build
+  - push
+  - deploy
+
+variables:
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_NAME: $DOCKERHUB_USER/ex03-nginx
+  IMAGE_TAG: $CI_PIPELINE_ID
+
+default:
+  image: docker:24.0
+  tags:
+    - docker          # this must match the tag on your docker runner
+  services:
+    - docker:24.0-dind
+
+build-image:
+  stage: build
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+
+push-image:
+  stage: push
+  script:
+    - docker build -t $IMAGE_NAME:$IMAGE_TAG .
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+    - docker push $IMAGE_NAME:$IMAGE_TAG
+    - docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
+    - docker push $IMAGE_NAME:latest
+
+run-nginx:
+  stage: deploy
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USER" --password-stdin
+    - docker pull $IMAGE_NAME:$IMAGE_TAG
+    - docker run -d --name nginx-demo -p 8080:80 $IMAGE_NAME:$IMAGE_TAG
+    - sleep 5
+    - docker ps
+    - curl -s http://localhost:8080 | head -20
