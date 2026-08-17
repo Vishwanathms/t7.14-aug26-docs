@@ -1,0 +1,30 @@
+stages:
+  - deploy
+  - test
+
+run-nginx:
+  stage: deploy
+  image: docker:24.0-cli
+  tags:
+    - docker
+  script:
+    - docker --version
+    - docker info
+    - |
+      if docker ps -a --format '{{.Names}}' | grep -q '^nginx-demo$'; then
+        echo "Container nginx-demo already exists"
+        docker start nginx-demo
+      else
+        echo "Creating nginx-demo container"
+        docker run -d --name nginx-demo -p 9085:80 nginx:latest
+      fi
+    - docker ps
+
+test-nginx:
+  stage: test
+  tags:
+    - shell
+  script:
+    - sleep 5
+    - curl -s http://172.17.0.1:9085 | head -20
+

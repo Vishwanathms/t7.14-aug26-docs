@@ -1,0 +1,19 @@
+stages:
+  - deploy
+
+run-nginx:
+  stage: deploy
+  image: docker:24.0-cli
+
+  tags:
+    - docker
+
+  script:
+    - docker --version
+    - docker info
+    - docker run -d --name nginx-demo -p 9085:80 nginx:latest
+    - docker ps
+    - sleep 5
+    - docker ps
+    - curl -s http://localhost:9085 | head -20
+

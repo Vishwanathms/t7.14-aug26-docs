@@ -1,0 +1,35 @@
+stages:
+  - deploy
+  - test
+
+variables:
+  #DOCKER_IMAGE: nginx:latest
+  HOST_PORT: 9085
+
+
+run-nginx:
+  stage: deploy
+  image: docker:24.0-cli
+  tags:
+    - docker
+  script:
+    - docker --version
+    - docker info
+    - |
+      if docker ps -a --format '{{.Names}}' | grep -q '^nginx-demo$'; then
+        echo "Container nginx-demo already exists"
+        docker start nginx-demo
+      else
+        echo "Creating nginx-demo container"
+        docker run -d --name nginx-demo -p ${HOST_PORT}:80 ${DOCKER_IMAGE}
+      fi
+    - docker ps
+
+test-nginx:
+  stage: test
+  tags:
+    - shell
+  script:
+    - sleep 5
+    - curl -s http://172.17.0.1:${HOST_PORT} | head -20
+
