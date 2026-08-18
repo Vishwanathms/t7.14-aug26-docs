@@ -1,0 +1,87 @@
+# CI pipeline for Phase 8 - three independent Spring Boot services, each with
+# its own PostgreSQL database, plus an nginx frontend, wired together with
+# docker compose.
+#
+# Paths in this file assume Phase-8/ is the repository root (GitLab reads
+# .gitlab-ci.yml from wherever it lives, but job scripts run relative to the
+# repository root by default). If this file instead lives inside a larger
+# monorepo, either move it to the repo root and prefix every script line
+# with `cd Phase-8 &&`, or set "CI/CD > General pipelines > CI/CD
+# configuration file" to Phase-8/.gitlab-ci.yml in the GitLab project
+# settings and add the same `cd Phase-8` prefix.
+#
+# Runner requirement: this pipeline assumes the runner has the host's
+# /var/run/docker.sock mounted (a docker executor configured against the
+# base VM's own Docker daemon), NOT docker:dind. That's what lets the
+# "deploy" stage's containers still be running when the "smoke-test" stage
+# starts - both jobs talk to the same real Docker daemon on the same host.
+# If this ever moves to a runner using docker:dind instead, these two
+# stages would need to be merged back into one job, since each dind
+# service is a fresh, empty daemon per job.
+#
+# Both jobs are pinned to the same runner via `tags` - update the tag
+# below to match whatever this runner is actually tagged as.
+
+stages:
+  - deploy
+  - smoke-test
+
+variables:
+  COMPOSE_PROJECT_NAME: phase8-ci
+  # Overrides the runner's own default (tcp://docker:2375, meant for a
+  # docker:dind service we don't use). The runner mounts the host VM's
+  # own docker.sock into the job container, so talk to that directly.
+  DOCKER_HOST: unix:///var/run/docker.sock
+
+.on_docker_runner:
+  tags:
+    - stu-docker
+
+deploy:
+  extends: .on_docker_runner
+  stage: deploy
+  image: docker:24-cli
+  script:
+    - docker compose version
+    - docker compose down || true # clean slate (containers/network only - keeps the DB volumes so data persists across runs)
+    - docker compose build
+    - docker compose up -d
+    - echo "Waiting for the stack to come up..."
+    - sleep 15
+    - docker compose ps
+
+smoke-test:
+  extends: .on_docker_runner
+  stage: smoke-test
+  image: docker:24-cli
+  needs:
+    - deploy
+  script:
+    # This job container and the compose stack from "deploy" are separate
+    # containers - sharing the host's Docker daemon does NOT put them on
+    # the same network, so localhost:8081 etc. from here would connect to
+    # nothing. Instead, run the smoke test itself in a throwaway container
+    # attached to the compose stack's own network, addressing services by
+    # their container names/internal ports.
+    #
+    # The script is piped in over stdin rather than bind-mounted: this job
+    # container only has host docker.sock access, so a `docker run -v`
+    # here would resolve its path against the runner VM's filesystem, not
+    # this job's own checkout - stdin has no such path-translation problem.
+    - >
+      docker run --rm -i
+      --network "${COMPOSE_PROJECT_NAME}_default"
+      -e BASE_URL=http://frontend
+      -e STUDENT_URL=http://student-service:8080
+      -e COURSE_URL=http://course-service:8080
+      -e ENROLLMENT_URL=http://enrollment-service:8080
+      alpine sh -c "apk add --no-cache bash curl >/dev/null 2>&1 && bash -s"
+      < ci/smoke-test.sh
+  after_script:
+    - docker compose logs --tail=200 > compose-logs.txt || true
+   # - docker compose down || true  # left disabled for debugging - stack stays up after a run; re-enable once the pipeline is stable
+  artifacts:
+    when: always
+    paths:
+      - compose-logs.txt
+    expire_in: 3 days

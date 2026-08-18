@@ -1,0 +1,105 @@
+services:
+
+  student-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: student_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - student-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d student_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  course-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: course_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - course-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d course_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  enrollment-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: enrollment_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - enrollment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d enrollment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  student-service:
+    build: ./student-service
+    environment:
+      DB_HOST: student-db
+      DB_PORT: 5432
+      DB_NAME: student_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+    ports:
+      - "8081:8080"
+    depends_on:
+      student-db:
+        condition: service_healthy
+
+  course-service:
+    build: ./course-service
+    environment:
+      DB_HOST: course-db
+      DB_PORT: 5432
+      DB_NAME: course_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+    ports:
+      - "8082:8080"
+    depends_on:
+      course-db:
+        condition: service_healthy
+
+  enrollment-service:
+    build: ./enrollment-service
+    environment:
+      DB_HOST: enrollment-db
+      DB_PORT: 5432
+      DB_NAME: enrollment_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+      STUDENT_SERVICE_URL: http://student-service:8080
+      COURSE_SERVICE_URL: http://course-service:8080
+    ports:
+      - "8083:8080"
+    depends_on:
+      enrollment-db:
+        condition: service_healthy
+      student-service:
+        condition: service_started
+      course-service:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - student-service
+      - course-service
+      - enrollment-service
+
+volumes:
+  student-db-data:
+  course-db-data:
+  enrollment-db-data:
