@@ -1,0 +1,74 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      routes:
+        - id: student-service-api
+          uri: http://student-service:8080
+          predicates:
+            - Path=/api/students/**
+
+        - id: course-service-api
+          uri: http://course-service:8080
+          predicates:
+            - Path=/api/courses/**
+
+        - id: enrollment-service-api
+          uri: http://enrollment-service:8080
+          predicates:
+            - Path=/api/enrollments/**
+
+        # Swagger/OpenAPI passthrough, one route pair per service, so each
+        # service's docs are still reachable now that their host ports are
+        # no longer published directly (see Architecture-Recommendations.md).
+        #
+        # StripPrefix alone isn't enough here: springdoc's Swagger UI page
+        # fetches its own config (/v3/api-docs/swagger-config) using an
+        # absolute, root-relative path baked into its bundled JS - it has no
+        # idea the gateway stripped a /student-service prefix on the way in,
+        # so that fetch 404s and the UI shows "Failed to load remote
+        # configuration" instead of rendering. Spring Cloud Gateway already
+        # sends X-Forwarded-Prefix itself, computed from the original,
+        # pre-StripPrefix request path - no AddRequestHeader filter needed
+        # here (adding one produced a doubled prefix, since the header ended
+        # up sent twice). Each service just needs
+        # `server.forward-headers-strategy: framework` set so Spring
+        # reconstructs URLs - including the ones springdoc generates - using
+        # that header.
+        - id: student-service-docs
+          uri: http://student-service:8080
+          predicates:
+            - Path=/student-service/**
+          filters:
+            - StripPrefix=1
+
+        - id: course-service-docs
+          uri: http://course-service:8080
+          predicates:
+            - Path=/course-service/**
+          filters:
+            - StripPrefix=1
+
+        - id: enrollment-service-docs
+          uri: http://enrollment-service:8080
+          predicates:
+            - Path=/enrollment-service/**
+          filters:
+            - StripPrefix=1
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Management System</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <h1>Student Management System</h1>
+      <span class="phase-tag">Phase 9 &middot; Web UI</span>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="students">Students</button>
+    <button class="tab" data-tab="courses">Courses</button>
+    <button class="tab" data-tab="enrollments">Enrollments</button>
+  </nav>
+
+  <main class="container">
+
+    <div id="toast" class="toast" hidden></div>
+
+    <!-- STUDENTS -->
+    <section class="panel active" id="panel-students">
+      <div class="panel-head">
+        <h2>Students</h2>
+        <button class="btn primary" id="btn-new-student">+ Add Student</button>
+      </div>
+
+      <div class="toolbar">
+        <input type="search" id="student-search" placeholder="Search by name&hellip;">
+        <button class="btn" id="btn-search-students">Search</button>
+        <button class="btn ghost" id="btn-clear-search">Clear</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr id="students-head-row">
+            <th class="sortable" data-sort="id">ID<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="name">Name<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="email">Email<span class="sort-indicator"></span></th>
+            <th class="sortable" data-sort="status">Status<span class="sort-indicator"></span></th>
+            <th class="actions-col">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="students-body">
+          <tr><td colspan="5" class="empty">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+
+      <div class="pagination">
+        <button class="btn ghost" id="students-prev">&larr; Prev</button>
+        <span id="students-page-info">Page 1</span>
+        <button class="btn ghost" id="students-next">Next &rarr;</button>
+      </div>
+    </section>
+
+    <!-- COURSES -->
+    <section class="panel" id="panel-courses">
+      <div class="panel-head">
+        <h2>Courses</h2>
+        <button class="btn primary" id="btn-new-course">+ Add Course</button>
+      </div>
+
+      <table class="data-table">
+        <thead>
+          <tr><th>ID</th><th>Title</th><th>Capacity</th><th class="actions-col">Actions</th></tr>
+        </thead>
+        <tbody id="courses-body">
+          <tr><td colspan="4" class="empty">Loading&hellip;</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- ENROLLMENTS -->
+    <section class="panel" id="panel-enrollments">
+      <div class="panel-head">
+        <h2>Enrollments</h2>
+      </div>
+
+      <form class="card-form" id="enroll-form">
+        <div class="field">
+          <label for="enroll-student">Student</label>
+          <select id="enroll-student" required></select>
+        </div>
+        <div class="field">
+          <label for="enroll-course">Course</label>
+          <select id="enroll-course" required></select>
+        </div>
+        <button class="btn primary" type="submit">Enroll</button>
+      </form>
+
+      <div class="lookup-row">
+        <div class="field">
+          <label for="lookup-student-id">View enrollments for student ID</label>
+          <div class="inline-field">
+            <input type="number" id="lookup-student-id" min="1" placeholder="e.g. 1">
+            <button class="btn" id="btn-lookup-student">View</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="lookup-course-id">View enrollments for course ID</label>
+          <div class="inline-field">
+            <input type="number" id="lookup-course-id" min="1" placeholder="e.g. 1">
+            <button class="btn" id="btn-lookup-course">View</button>
+          </div>
+        </div>
+      </div>
+
+      <ul class="enrollment-list" id="enrollment-results"></ul>
+      <p class="muted">Un-enrolling removes the enrollment record only &mdash; it does not delete the student or the course.</p>
+    </section>
+
+  </main>
+
+  <!-- Student form modal -->
+  <div class="modal-backdrop" id="student-modal-backdrop" hidden>
+    <div class="modal">
+      <h3 id="student-modal-title">Add Student</h3>
+      <form id="student-form">
+        <input type="hidden" id="student-id">
+        <div class="field">
+          <label for="student-name">Name</label>
+          <input type="text" id="student-name" required>
+          <p class="field-error" id="student-name-error"></p>
+        </div>
+        <div class="field">
+          <label for="student-email">Email</label>
+          <input type="email" id="student-email" required>
+          <p class="field-error" id="student-email-error"></p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="btn-cancel-student">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Course form modal -->
+  <div class="modal-backdrop" id="course-modal-backdrop" hidden>
+    <div class="modal">
+      <h3 id="course-modal-title">Add Course</h3>
+      <form id="course-form">
+        <input type="hidden" id="course-id">
+        <div class="field">
+          <label for="course-title">Title</label>
+          <input type="text" id="course-title" required>
+          <p class="field-error" id="course-title-error"></p>
+        </div>
+        <div class="field">
+          <label for="course-capacity">Capacity</label>
+          <input type="number" id="course-capacity" min="1" value="30" required>
+          <p class="field-error" id="course-capacity-error"></p>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn ghost" id="btn-cancel-course">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Confirm delete (shared by students, courses, and enrollments) -->
+  <div class="modal-backdrop" id="confirm-modal-backdrop" hidden>
+    <div class="modal small">
+      <h3 id="confirm-modal-title">Delete?</h3>
+      <p id="confirm-modal-text" class="muted"></p>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="btn-cancel-delete">Cancel</button>
+        <button type="button" class="btn danger" id="btn-confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

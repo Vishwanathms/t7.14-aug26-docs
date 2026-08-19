@@ -1,0 +1,176 @@
+x-splunk-logging: &splunk-logging
+  driver: splunk
+  options:
+    # Docker's built-in logging drivers resolve this URL's host from the
+    # daemon's own host-level DNS resolver, not the container network's
+    # embedded DNS - a container-name hostname like "splunk" never resolves
+    # here even though it resolves fine from inside a container on the same
+    # network. Splunk's HEC port is published to the host (see the splunk
+    # service's `ports:` below), so the host loopback is used instead.
+    splunk-url: "http://127.0.0.1:8088"
+    splunk-token: "${SPLUNK_HEC_TOKEN:-00000000-0000-0000-0000-000000000000}"
+    splunk-format: "json"
+    splunk-sourcetype: "stu-mgmt"
+    tag: "{{.Name}}"
+
+services:
+
+  splunk:
+    image: splunk/splunk:latest
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_GENERAL_TERMS: --accept-sgt-current-at-splunk-com
+      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD:-Changeme123!}
+      SPLUNK_HEC_TOKEN: ${SPLUNK_HEC_TOKEN:-00000000-0000-0000-0000-000000000000}
+      SPLUNK_HEC_SSL: "False"
+    ports:
+      - "8000:8000"   # Splunk web UI
+      - "8088:8088"   # HTTP Event Collector (HEC)
+    volumes:
+      - splunk-etc:/opt/splunk/etc
+      - splunk-var:/opt/splunk/var
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/en-US/account/login"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  student-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: student_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - student-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d student_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *splunk-logging
+    depends_on:
+      splunk:
+        condition: service_healthy
+
+  course-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: course_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - course-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d course_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *splunk-logging
+    depends_on:
+      splunk:
+        condition: service_healthy
+
+  enrollment-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: enrollment_db
+      POSTGRES_USER: stumgmt
+      POSTGRES_PASSWORD: stumgmt
+    volumes:
+      - enrollment-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stumgmt -d enrollment_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    logging: *splunk-logging
+    depends_on:
+      splunk:
+        condition: service_healthy
+
+  student-service:
+    build: ./student-service
+    environment:
+      DB_HOST: student-db
+      DB_PORT: 5432
+      DB_NAME: student_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+    # No host port: reachable only from other containers on this compose
+    # network. The gateway is now the sole path in from outside (see
+    # Docs/Architecture-Recommendations.md).
+    logging: *splunk-logging
+    depends_on:
+      student-db:
+        condition: service_healthy
+      splunk:
+        condition: service_healthy
+
+  course-service:
+    build: ./course-service
+    environment:
+      DB_HOST: course-db
+      DB_PORT: 5432
+      DB_NAME: course_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+    logging: *splunk-logging
+    depends_on:
+      course-db:
+        condition: service_healthy
+      splunk:
+        condition: service_healthy
+
+  enrollment-service:
+    build: ./enrollment-service
+    environment:
+      DB_HOST: enrollment-db
+      DB_PORT: 5432
+      DB_NAME: enrollment_db
+      DB_USERNAME: stumgmt
+      DB_PASSWORD: stumgmt
+      STUDENT_SERVICE_URL: http://student-service:8080
+      COURSE_SERVICE_URL: http://course-service:8080
+    logging: *splunk-logging
+    depends_on:
+      enrollment-db:
+        condition: service_healthy
+      student-service:
+        condition: service_started
+      course-service:
+        condition: service_started
+      splunk:
+        condition: service_healthy
+
+  gateway:
+    build: ./gateway-service
+    ports:
+      - "9000:8080"
+    logging: *splunk-logging
+    depends_on:
+      student-service:
+        condition: service_started
+      course-service:
+        condition: service_started
+      enrollment-service:
+        condition: service_started
+      splunk:
+        condition: service_healthy
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    logging: *splunk-logging
+    depends_on:
+      - gateway
+      - splunk
+
+volumes:
+  student-db-data:
+  course-db-data:
+  enrollment-db-data:
+  splunk-etc:
+  splunk-var:
